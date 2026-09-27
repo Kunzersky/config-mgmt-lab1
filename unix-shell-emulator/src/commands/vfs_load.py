@@ -6,7 +6,7 @@ from .base import CommandContext, error
 
 def run(context: CommandContext, arguments: list[str]) -> None:
     if len(arguments) != 1:
-        error(context, "vfs_load: usage: vfs_load ARCHIVE")
+        error(context, "vfs-load: usage: vfs-load ARCHIVE")
         return
     try:
         loaded = load_zip(Path(arguments[0]))

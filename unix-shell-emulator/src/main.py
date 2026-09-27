@@ -10,7 +10,12 @@ from .vfs.vfs import VFS
 def main(argv: list[str] | None = None) -> int:
     config = parse_args(argv)
     vfs = load_zip(config.vfs_path) if config.vfs_path else VFS(Node("", True))
-    run_repl(vfs, prompt=config.prompt, startup_script=config.startup_script)
+    run_repl(
+        vfs,
+        prompt=config.prompt,
+        startup_script=config.startup_script,
+        config=config,
+    )
     return 0
 
 

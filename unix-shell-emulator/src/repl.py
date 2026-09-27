@@ -5,8 +5,9 @@ import io
 import socket
 from pathlib import Path
 
-from .commands import cat, cd, chown, exit as exit_command, history, ls, vfs_load
+from .commands import cat, cd, chown, conf_dump, exit as exit_command, history, ls, vfs_load
 from .commands.base import CommandContext, error
+from .config import Config
 from .parser import ParseError, parse_line
 from .vfs.node import Node
 from .vfs.vfs import VFS
@@ -18,7 +19,8 @@ COMMANDS = {
     "history": history.run,
     "cat": cat.run,
     "chown": chown.run,
-    "vfs_load": vfs_load.run,
+    "conf-dump": conf_dump.run,
+    "vfs-load": vfs_load.run,
 }
 
 
@@ -50,19 +52,25 @@ def run_repl(
     input_stream: io.TextIOBase | None = None,
     output_stream: io.TextIOBase | None = None,
     startup_script: Path | None = None,
+    config: Config | None = None,
 ) -> None:
     input_stream = input_stream or io.TextIOWrapper(__import__("sys").stdin.buffer)
     output_stream = output_stream or __import__("sys").stdout
-    context = CommandContext(vfs or VFS(Node("", True)), output_stream)
+    context = CommandContext(
+        vfs or VFS(Node("", True)),
+        output_stream,
+        config=config or Config(startup_script=startup_script, prompt=prompt),
+    )
 
     if startup_script:
         for line in startup_script.read_text(encoding="utf-8").splitlines():
             if line.strip() and not line.lstrip().startswith("#"):
+                context.has_error = False
                 try:
                     execute_line(context, line)
                 except ParseError as error_value:
                     error(context, f"parse error: {error_value}")
-                if context.should_exit:
+                if context.should_exit or context.has_error:
                     return
 
     while not context.should_exit:
