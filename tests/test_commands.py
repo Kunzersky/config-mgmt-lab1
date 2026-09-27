@@ -24,6 +24,19 @@ def test_ls_and_cat():
     assert context.output.getvalue() == "docs/\nnotes.txt\nhello\n"
 
 
+def test_ls_shows_files_multiple_paths_and_owners():
+    context = make_context()
+    context.vfs.resolve("docs").add_child(Node("guide.txt", False, b"guide"))
+    context.vfs.resolve("notes.txt").owner = "alice"
+
+    ls.run(context, ["notes.txt", "docs"])
+    ls.run(context, ["-l", "notes.txt"])
+
+    assert context.output.getvalue() == (
+        "notes.txt\nguide.txt\nalice notes.txt\n"
+    )
+
+
 def test_cd_chown_and_history():
     context = make_context()
     cd.run(context, ["docs"])
@@ -31,7 +44,9 @@ def test_cd_chown_and_history():
     cd.run(context, [".."])
     chown.run(context, ["alice", "notes.txt"])
     assert context.vfs.resolve("notes.txt").owner == "alice"
+    ls.run(context, ["-l", "notes.txt"])
     history.run(context, [])
+    assert "alice notes.txt" in context.output.getvalue()
     assert "1  ls" in context.output.getvalue()
 
 

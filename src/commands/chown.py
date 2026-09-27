@@ -1,8 +1,11 @@
 from .base import CommandContext, error
 
+CHOWN_ARGS = 2
+
 
 def run(context: CommandContext, arguments: list[str]) -> None:
-    if len(arguments) != 2:
+    """Change the owner recorded on a VFS node."""
+    if len(arguments) != CHOWN_ARGS:
         error(context, "chown: usage: chown OWNER PATH")
         return
     owner, path = arguments
