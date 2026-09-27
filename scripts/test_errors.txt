@@ -1,4 +1,1 @@
 missing-command
-cd missing
-cat missing.txt
-chown

@@ -1,7 +1,13 @@
-ls
-cd docs
-ls
-cd ..
+conf-dump
+ls -l
 cat README.txt
+chown alice README.txt
+ls -l README.txt
+cd docs
+ls -l
+cat notes.txt
 history
+cd /
+vfs-load vfs_samples/minimal.b64
+ls
 exit

@@ -1,0 +1,8 @@
+# Этап 4: разбор команд и базовые операции
+ls
+cd docs
+ls
+cat notes.txt
+cd /
+history
+missing-command

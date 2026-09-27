@@ -1,0 +1,8 @@
+# Этап 5: дополнительные команды и загрузка VFS
+conf-dump
+ls -l README.txt
+chown alice README.txt
+ls -l README.txt
+vfs-load vfs_samples/minimal.b64
+ls
+missing-command
