@@ -1,6 +1,7 @@
 import base64
 import io
 import zipfile
+from pathlib import Path
 
 from src.vfs.loader import load_zip
 from src.vfs.vfs import VFSError
@@ -24,8 +25,24 @@ def test_load_zip_and_navigate():
 
 
 def test_load_base64_zip():
-    vfs = load_zip(base64.b64encode(archive_bytes()))
+    vfs = load_zip(base64.encodebytes(archive_bytes()))
     assert vfs.read_file("readme.txt") == b"read me"
+
+
+def test_invalid_archive_has_clear_error():
+    try:
+        load_zip(b"not an archive")
+    except ValueError as error:
+        assert "valid base64 ZIP" in str(error)
+    else:
+        raise AssertionError("invalid archive should fail")
+
+
+def test_deep_tree_sample_has_three_levels():
+    samples = Path(__file__).parents[1] / "vfs_samples"
+    vfs = load_zip(samples / "deep_tree.b64")
+
+    assert vfs.read_file("a/b/c/deep.txt") == b"deep file\n"
 
 
 def test_missing_path_fails():

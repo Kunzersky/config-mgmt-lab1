@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 
 @dataclass
 class Node:
+    """Represent a file or directory in the in-memory filesystem."""
+
     name: str
     is_dir: bool
     content: bytes = b""
@@ -13,12 +15,14 @@ class Node:
     parent: "Node | None" = field(default=None, repr=False)
 
     def add_child(self, child: "Node") -> None:
+        """Attach a child node to this directory."""
         if not self.is_dir:
             raise ValueError("cannot add a child to a file")
         child.parent = self
         self.children[child.name] = child
 
     def path(self) -> str:
+        """Return this node's absolute path inside the VFS."""
         parts: list[str] = []
         current: Node | None = self
         while current is not None and current.parent is not None:
