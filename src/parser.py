@@ -4,10 +4,13 @@ import shlex
 
 
 class ParseError(ValueError):
+    """Raised when a command line cannot be tokenized."""
+
     pass
 
 
 def parse_line(line: str) -> tuple[str, list[str]] | None:
+    """Split a command line into its name and arguments."""
     try:
         parts = shlex.split(line)
     except ValueError as error:

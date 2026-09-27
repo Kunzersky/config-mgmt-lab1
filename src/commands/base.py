@@ -9,6 +9,8 @@ from ..vfs.vfs import VFS
 
 @dataclass
 class CommandContext:
+    """Mutable state shared by built-in commands in one shell session."""
+
     vfs: VFS
     output: TextIO
     history: list[str] = field(default_factory=list)
@@ -18,5 +20,6 @@ class CommandContext:
 
 
 def error(context: CommandContext, message: str) -> None:
+    """Write an error and mark the current command as failed."""
     context.has_error = True
     print(f"shell: {message}", file=context.output)
