@@ -1,11 +1,21 @@
 """Interactive command loop."""
 
 import getpass
-import io
+import sys
 import socket
 from pathlib import Path
+from typing import TextIO
 
-from .commands import cat, cd, chown, conf_dump, exit as exit_command, history, ls, vfs_load
+from .commands import (
+    cat,
+    cd,
+    chown,
+    conf_dump,
+    exit as exit_command,
+    history,
+    ls,
+    vfs_load,
+)
 from .commands.base import CommandContext, error
 from .config import Config
 from .parser import ParseError, parse_line
@@ -25,6 +35,7 @@ COMMANDS = {
 
 
 def make_prompt(context: CommandContext, template: str) -> str:
+    """Render a prompt using the current user, host, and VFS path."""
     return template.format(
         user=getpass.getuser(),
         host=socket.gethostname(),
@@ -33,6 +44,7 @@ def make_prompt(context: CommandContext, template: str) -> str:
 
 
 def execute_line(context: CommandContext, line: str) -> None:
+    """Parse and execute one shell command line."""
     parsed = parse_line(line)
     if parsed is None:
         return
@@ -49,40 +61,61 @@ def run_repl(
     vfs: VFS | None = None,
     *,
     prompt: str = "{user}@{host}:{cwd}$ ",
-    input_stream: io.TextIOBase | None = None,
-    output_stream: io.TextIOBase | None = None,
+    input_stream: TextIO | None = None,
+    output_stream: TextIO | None = None,
     startup_script: Path | None = None,
     config: Config | None = None,
 ) -> None:
-    input_stream = input_stream or io.TextIOWrapper(__import__("sys").stdin.buffer)
-    output_stream = output_stream or __import__("sys").stdout
+    """Run an optional startup script followed by the interactive REPL."""
+    input_stream = input_stream or sys.stdin
+    output_stream = output_stream or sys.stdout
     context = CommandContext(
         vfs or VFS(Node("", True)),
         output_stream,
         config=config or Config(startup_script=startup_script, prompt=prompt),
     )
 
-    if startup_script:
-        for line in startup_script.read_text(encoding="utf-8").splitlines():
-            if line.strip() and not line.lstrip().startswith("#"):
-                context.has_error = False
-                try:
-                    execute_line(context, line)
-                except ParseError as error_value:
-                    error(context, f"parse error: {error_value}")
-                if context.should_exit or context.has_error:
-                    return
+    if startup_script and not run_script(context, startup_script, prompt):
+        return
+    run_interactive(context, prompt, input_stream)
 
+
+def run_script(
+    context: CommandContext,
+    startup_script: Path,
+    prompt: str,
+) -> bool:
+    """Echo and execute a script; stop and return false on the first error."""
+    for line in startup_script.read_text(encoding="utf-8").splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        context.output.write(f"{make_prompt(context, prompt)}{line}\n")
+        context.has_error = False
+        try:
+            execute_line(context, line)
+        except ParseError as error_value:
+            error(context, f"parse error: {error_value}")
+        if context.should_exit or context.has_error:
+            return False
+    return True
+
+
+def run_interactive(
+    context: CommandContext,
+    prompt: str,
+    input_stream: TextIO,
+) -> None:
+    """Read and execute commands until the session is asked to exit."""
     while not context.should_exit:
         try:
-            output_stream.write(make_prompt(context, prompt))
-            output_stream.flush()
+            context.output.write(make_prompt(context, prompt))
+            context.output.flush()
             line = input_stream.readline()
         except KeyboardInterrupt:
-            output_stream.write("\n")
+            context.output.write("\n")
             continue
         if not line:
-            output_stream.write("\n")
+            context.output.write("\n")
             break
         try:
             execute_line(context, line.rstrip("\n"))
